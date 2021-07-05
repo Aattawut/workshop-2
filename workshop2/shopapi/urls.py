@@ -26,4 +26,12 @@ urlpatterns = [
     path('product/<int:id>/', ProductAPIView.as_view(), name='product_id'),
 
     path('cart/', CartAPIView.as_view(), name='cart'),
+    path('cart/<int:pk>/', CartEditAPIView.as_view(), name='cart-edit'),
+    
+    path('checkout/', CheckoutAPIView.as_view(), name='checkout'),
+    
+    path('invoice/', InvoiceAPIView.as_view(), name='invoice'),
+    path('invoice/<int:id>/', InvoiceitemAPIView.as_view(), name='invoice-id'),
+
+    path('invoice/<int:pk>/void/', Invoice_voidAPIView.as_view(), name='invoice-id'),
 ]

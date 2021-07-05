@@ -6,22 +6,28 @@ class CategoryAdmin(admin.ModelAdmin):
     model = Category
     list_display = ['name','detail','is_enabled','image']
 
+class ProductImageAdmin(admin.StackedInline):
+    model = Product_image
+    extra = 2
+    # list_display = ['img_product','image']
 
 class ProductAdmin(admin.ModelAdmin):
     model = Product
-    list_display = ['category','name','detail','price','is_enabled','image']
+    list_display = ['id','category','name','detail','price','is_enabled','image']
+    inlines = [ProductImageAdmin]
 
 class ProductImageAdmin(admin.ModelAdmin):
-    model = Product_image
-    list_display = ['img_product','image']
+    # model = Product_image
+    list_display = ['image']
 
 class CartAdmin(admin.ModelAdmin):
     model = Cart
-    list_display = ['cart_product','user','quantity','total']
+    list_display = ['id','cart_product','user','quantity','total']
+    
 
 class InvoiceAdmin(admin.ModelAdmin):
     model = Invoice
-    list_display = ['iv_user','created_datetime','updated_datetime','total','status']
+    list_display = ['id','iv_user','created_datetime','updated_datetime','total','status']
 
 class InvoiceItemAdmin(admin.ModelAdmin):
     model = Invoice_item

@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
-from .models import Category, Product, Product_image, Cart
+from .models import Category, Product, Product_image, Cart, Invoice, Invoice_item
 
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer
 
@@ -14,7 +14,9 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import make_password
 from rest_framework.response import Response
-from rest_framework.exceptions import AuthenticationFailed
+from rest_framework import status
+from rest_framework.exceptions import AuthenticationFailed, PermissionDenied,NotFound,ValidationError,ParseError
+from versatileimagefield.serializers import VersatileImageFieldSerializer
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -34,7 +36,7 @@ class TokenObtainPairSerializer(TokenObtainPairSerializer):
             data = super().validate(attrs)
             # print(data)
             token = self.get_token(self.user)
-            # print(token)
+            # print(token)  
             # data['user'] = str(self.user)
             # data['id'] = self.user.id
 
@@ -42,7 +44,7 @@ class TokenObtainPairSerializer(TokenObtainPairSerializer):
             data['expires_in'] = int(token.access_token.lifetime.total_seconds())
             return data
         except:
-            raise AuthenticationFailed({'msg':'ชื่อผู้ใช้เเละรหัสผ่านไม่ถูกต้อง',"code": "LOGIN_FAIL"}, 400) 
+            raise ParseError({'msg':'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง',"code": "LOGIN_FAIL"}) 
         return data
         
 
@@ -59,7 +61,7 @@ class TokenRefreshLifetimeSerializer(TokenRefreshSerializer):
             data['expires_in'] = int(refresh.access_token.lifetime.total_seconds())
             return data
         except:
-            raise AuthenticationFailed({'msg':'Refresh Token ไม่ถูกต้อง',"code": "REFRESH_TOKEN_FAIL"}, 400) 
+            raise ParseError({'msg':'Refresh Token ไม่ถูกต้อง',"code": "REFRESH_TOKEN_FAIL"}) 
         return data
 
 # Register serializer
@@ -71,6 +73,14 @@ class RegisterSerializer(serializers.ModelSerializer):
             'password':{'write_only': True},
         }
     
+    def validate_password(self, password):
+        if len(password) < 8:
+            raise ValidationError("รหัสผ่านต้องมากกว่า 8 ตัวอักษร")
+        return password
+     
+            
+
+
     def create(self, validated_data):
         user = User.objects.create_user(validated_data['username'],
         password = validated_data['password'] ,
@@ -87,13 +97,28 @@ class UserSerializer(serializers.ModelSerializer):
 
 # Category serializer
 class CategorySerializer(serializers.ModelSerializer):
- 
+    image = VersatileImageFieldSerializer(
+        sizes=[
+            ('full_size', 'url'),
+            ('thumbnail', 'thumbnail__100x100'),
+            ('medium_square_crop', 'crop__400x400'),
+            ('small_square_crop', 'crop__50x50')
+        ]
+    )
     class Meta:
         model = Category
         fields = '__all__'
 
 # Product Image serializer
-class ProductImageSerializer(serializers.HyperlinkedModelSerializer):
+class ProductImageSerializer(serializers.ModelSerializer):
+    image = VersatileImageFieldSerializer(
+        sizes=[
+            ('full_size', 'url'),
+            ('thumbnail', 'thumbnail__100x100'),
+            ('medium_square_crop', 'crop__400x400'),
+            ('small_square_crop', 'crop__50x50')
+        ]
+    )
     class Meta:
         model = Product_image
         fields = ['id','image']
@@ -101,6 +126,14 @@ class ProductImageSerializer(serializers.HyperlinkedModelSerializer):
 
 # Product serializer
 class ProductSerializer(serializers.ModelSerializer):
+    image = VersatileImageFieldSerializer(
+        sizes=[
+            ('full_size', 'url'),
+            ('thumbnail', 'thumbnail__100x100'),
+            ('medium_square_crop', 'crop__400x400'),
+            ('small_square_crop', 'crop__50x50')
+        ]
+    )
     # image_product = ProductImageSerializer(many=True, read_only=True)
     class Meta:
         model = Product
@@ -109,12 +142,68 @@ class ProductSerializer(serializers.ModelSerializer):
 # Product serializer2
 class ProductDetailSerializer(serializers.ModelSerializer):
     image_product = ProductImageSerializer(many=True, read_only=True)
+    image = VersatileImageFieldSerializer(
+        sizes=[
+            ('full_size', 'url'),
+            ('thumbnail', 'thumbnail__100x100'),
+            ('medium_square_crop', 'crop__400x400'),
+            ('small_square_crop', 'crop__50x50')
+        ]
+    )
     class Meta:
         model = Product
         fields = ['id','category','name','price','detail','image','is_enabled','image_product']
 
+class ProductHyperSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Product
+        fields = '__all__'
+
+
 
 class CartSerializer(serializers.ModelSerializer):
+
+    cart_product = serializers.CharField(max_length=10, error_messages={"blank": "กรุณากรอกรหัสสินค้า"})
+    quantity = serializers.IntegerField(error_messages={"blank": "จำนวนสินค้านี้ต้องมากกว่า 0"})
+  
+    class Meta:
+        model = Cart
+        fields =  ['cart_product','quantity','total','user']
+
+    def validate_cart_product(self, cart_product):
+        try:
+            is_enableds = Product.objects.get(pk = int(cart_product))
+        except:
+            raise ValidationError('ไม่พบสินค้าชิ้นนี้')
+        
+        if not is_enableds.is_enabled:
+            raise ValidationError('สินค้านี้ถูกปิดการใช้งาน')
+        return cart_product
+    
+    def validate_quantity(self, quantity):
+        if quantity == 0:
+            raise ValidationError('สำนวนสินค้าต้องมากกว่า 0 ชิ้น')
+
+        return quantity
+    
+class CartEditSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Cart
+        fields = ['cart_product','quantity','total']
+
+class CheckoutSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cart
         fields = '__all__'
+
+class InvoiceitemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Invoice_item
+        fields = '__all__'
+
+class InvoiceSerializer(serializers.ModelSerializer):
+    invoice_item = InvoiceitemSerializer(many=True)
+    class Meta:
+        model = Invoice
+        fields = ['iv_user','created_datetime','updated_datetime','total','status','invoice_item']

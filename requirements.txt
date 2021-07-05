@@ -1,9 +1,12 @@
 asgiref==3.4.0
 Django==3.2.4
 django-filter==2.4.0
+django-versatileimagefield==2.1
 djangorestframework==3.12.4
 djangorestframework-simplejwt==4.7.1
 Markdown==3.3.4
+Pillow==8.3.0
 PyJWT==2.1.0
+python-magic==0.4.24
 pytz==2021.1
 sqlparse==0.4.1
