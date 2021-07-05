@@ -234,7 +234,7 @@ cython_debug/
 pyvenv.cfg
 .venv
 pip-selfcheck.json
-ws2/
+ws2
 migrations
 
 # End of https://www.toptal.com/developers/gitignore/api/python,django,database,venv
