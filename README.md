@@ -16,5 +16,5 @@
 - `python manage.py migrate`
 - `python manage.py runserver 0.0.0.0:8000`
 ## init data
-- `python manage.py loaddata cactusshopdb/cactusshop.json`
+- `python manage.py loaddata apipdb/apidb.json`
  
