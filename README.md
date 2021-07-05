@@ -1,7 +1,8 @@
 # Workshop-2
 
 ## POSTMAN Link 
-- `https://www.postman.com/collections/583523dda916141cfa6a`
+- ``
+- [link Postman](https://www.postman.com/collections/583523dda916141cfa6a)
 - `import postman env from /postman-env/env-workshop2.postman_environment.json`
 
 ## Project setup
